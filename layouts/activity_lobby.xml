@@ -11,7 +11,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="16dp"
         android:fontFamily="casual"
         android:text="Room Name"
         android:textSize="24sp"
@@ -43,10 +43,10 @@
 
     <Button
         android:id="@+id/startBtn"
-        android:layout_width="72dp"
+        android:layout_width="96dp"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginTop="88dp"
         android:text="START"
         android:visibility="invisible"
         app:layout_constraintEnd_toEndOf="parent"
@@ -67,27 +67,25 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="1.0" />
 
-    <EditText
-        android:id="@+id/passwordInput"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:ems="10"
-        android:hint="Password"
-        android:inputType="textPersonName"
-        android:visibility="invisible"
-        app:layout_constraintStart_toStartOf="@+id/roomKeyView"
-        app:layout_constraintTop_toBottomOf="@+id/roomKeyView" />
-
     <CheckBox
         android:id="@+id/closedChk"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="16dp"
         android:text="Closed"
         android:visibility="invisible"
-        app:layout_constraintStart_toEndOf="@+id/passwordInput"
-        app:layout_constraintTop_toTopOf="@+id/passwordInput" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/roomKeyView" />
+
+    <Button
+        android:id="@+id/exitBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="8dp"
+        android:text="EXIT"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 </android.support.constraint.ConstraintLayout>
