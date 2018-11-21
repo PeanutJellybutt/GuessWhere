@@ -4,8 +4,6 @@ import android.content.Intent
 import android.graphics.Color
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.util.Log
 import android.view.View
 import com.google.firebase.database.*
@@ -22,6 +20,7 @@ class LobbyActivity : AppCompatActivity() {
 
     private var playersCount: Int = 0 //FB
     private var playersRef: DatabaseReference? = null
+    private var playersListener: ValueEventListener? = null
     private var playersList: ArrayList<Player> = ArrayList<Player>()
     private var playersListAdapter: LobbyPlayerAdapter? = null
 
@@ -44,7 +43,6 @@ class LobbyActivity : AppCompatActivity() {
             //Setting initial lobby values
             gameRoomRef!!.child("name").setValue(ROOM_NAME)
             gameRoomRef!!.child("closed").setValue(0)
-            gameRoomRef!!.child("password").setValue(0)
             gameRoomRef!!.child("started").setValue(0)
 
             val lat = bundle.get("lat") as Double
@@ -54,6 +52,17 @@ class LobbyActivity : AppCompatActivity() {
 
             //Index room key to ROOM_NAMES
             firebaseDatabase.getReference("ROOM_NAMES/$ROOM_NAME/$ROOM_KEY").setValue(true)
+
+            //Closing down lobby
+            exitBtn.setOnClickListener {
+                //Set start flag to -1 to acknowledge players' device that lobby is shutting down
+                gameRoomRef!!.child("started").setValue(-1)
+
+                //Remove own's player
+                val myKey = currentPlayer.key
+                playersRef!!.child(myKey).removeValue()
+            }
+
         } else {
             //Get reference to the lobby with the given key
             ROOM_KEY = bundle.get("key").toString()
@@ -70,7 +79,7 @@ class LobbyActivity : AppCompatActivity() {
         playersList.add(currentPlayer)
         playersCount++
 
-        //If is not the host, listen for when the host starts the game
+        //If is not the host, listen for when the host starts the game or close the lobby
         if ( !isHost ) {
             gameRoomRef!!.child("started").addValueEventListener(object: ValueEventListener {
                 override fun onDataChange (p0: DataSnapshot) {
@@ -88,34 +97,62 @@ class LobbyActivity : AppCompatActivity() {
                         intent.putExtra("players_count",playersCount)
                         startActivity(intent)
                         finish()
+                    } else if ( flag == -1 ) {
+                        //Lobby is shutting down, remove own's player
+                        val myKey = currentPlayer.key
+                        playersRef!!.child(myKey).removeValue()
+                        finish()
                     }
                 }
                 override fun onCancelled(p0: DatabaseError?) { }
             })
+
+            //Exit lobby, remove own's player
+            exitBtn.setOnClickListener {
+                val myKey = currentPlayer.key
+                playersRef!!.child(myKey).removeValue()
+                finish()
+            }
         }
 
         //Setting up lobby players list view
         playersListAdapter = LobbyPlayerAdapter(this, R.layout.players_list, playersList)
         playersListView.adapter = playersListAdapter
-        playersRef!!.addValueEventListener( object: ValueEventListener {
+        playersListener = object: ValueEventListener {
             //Re-update players list on players joined/exited
             override fun onDataChange (p0: DataSnapshot) {
                 playersList.clear()
                 playersCount = 0
-                for (player in p0.children) {
-                    if ( !player.hasChild("name") or !player.hasChild("color") )
-                        continue
-                    val playerRef = player.ref
-                    val playerName = player.child("name").value.toString()
-                    val playerColor = player.child("color").value.toString().toInt()
-                    val player = Player(playerRef.key,playerName,playerColor)
-                    playersList.add(player)
-                    playersCount++
+
+                if (p0.hasChildren()) {
+                    //If still has player in lobby
+                    for (player in p0.children) {
+                        if (!player.hasChild("name") or !player.hasChild("color"))
+                            continue
+                        val playerRef = player.ref
+                        val playerName = player.child("name").value.toString()
+                        val playerColor = player.child("color").value.toString().toInt()
+                        val player = Player(playerRef.key, playerName, playerColor)
+                        playersList.add(player)
+                        playersCount++
+                    }
+                    playersListAdapter!!.notifyDataSetChanged()
+                } else {
+                    //End lobby if no player is left, remove room's key index within the ROOM_NAMES/"name"
+                    firebaseDatabase.getReference("ROOM_NAMES/$ROOM_NAME/$ROOM_KEY").removeValue()
+                    Log.d("HOST: ROOM","NAME INDEX REMOVED")
+
+                    //Delete lobby from Firebase and remove listeners on database references
+                    gameRoomRef!!.removeValue()
+                    playersRef!!.removeEventListener(this)
+                    Log.d("HOST: ROOM","LOBBY REMOVED")
+                    Log.d("HOST: ROOM","EXITING")
+                    finish()
                 }
-                playersListAdapter!!.notifyDataSetChanged()
             }
             override fun onCancelled(p0: DatabaseError?) { }
-        })
+        }
+        playersRef!!.addValueEventListener(playersListener)
 
         if ( isHost ) {
             //FOR TESTING ONLY
@@ -159,19 +196,6 @@ class LobbyActivity : AppCompatActivity() {
                 if ( isChecked )
                     gameRoomRef!!.child("closed").setValue(1)
                 else gameRoomRef!!.child("closed").setValue(0)
-            })
-
-            //PASSWORD input box only visible to the host, set lobby password
-            passwordInput.visibility = View.VISIBLE
-            passwordInput.addTextChangedListener(object: TextWatcher {
-                override fun afterTextChanged(p0: Editable?) {
-                    val password = p0.toString()
-                    if ( !password.isNullOrEmpty() )
-                        gameRoomRef!!.child("password").setValue(password)
-                    else gameRoomRef!!.child("password").setValue(0)
-                }
-                override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) { }
-                override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) { }
             })
         }
     }
