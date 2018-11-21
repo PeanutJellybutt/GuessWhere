@@ -195,6 +195,7 @@ class GameActivity : AppCompatActivity() {
                             readyRef!!.removeEventListener(this)
                             Log.d("HOST: ROOM","GAME ROOM REMOVED")
                             Log.d("HOST: ROOM","ENDING")
+                            finish()
                         }
                     }
                 }
@@ -291,7 +292,8 @@ class GameActivity : AppCompatActivity() {
                                 flagResultsRef!!.removeEventListener(thisListener)
                                 readyRef!!.push().setValue(true)
                                 Log.d("PLAYER: READY","PUSHED $myKey")
-                                finish()
+                                if ( !isHost )
+                                    finish()
                             }
                         }
                         override fun onCancelled(p0: DatabaseError?) { }
@@ -317,7 +319,7 @@ class GameActivity : AppCompatActivity() {
     }
 
     private fun calculateScore(ans: String): Int {
-        
+
         //**************** CALCULATE SCORE WITH THE PROVIDED ANSWER HERE ******************
 
         //TEST FOR NOW
