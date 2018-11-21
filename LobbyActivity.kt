@@ -13,8 +13,6 @@ import kotlinx.android.synthetic.main.activity_lobby.*
 import java.util.*
 import android.widget.CompoundButton
 
-
-
 class LobbyActivity : AppCompatActivity() {
 
     private val firebaseDatabase = FirebaseDatabase.getInstance()
@@ -44,11 +42,15 @@ class LobbyActivity : AppCompatActivity() {
             ROOM_KEY = gameRoomRef!!.key
 
             //Setting initial lobby values
+            gameRoomRef!!.child("name").setValue(ROOM_NAME)
             gameRoomRef!!.child("closed").setValue(0)
             gameRoomRef!!.child("password").setValue(0)
-            gameRoomRef!!.child("roomLat").setValue(0)  //Should be set with location finding
-            gameRoomRef!!.child("roomLng").setValue(0)  //Should be set with location finding
             gameRoomRef!!.child("started").setValue(0)
+
+            val lat = bundle.get("lat") as Double
+            val lng = bundle.get("lng") as Double
+            gameRoomRef!!.child("roomLat").setValue(lat)
+            gameRoomRef!!.child("roomLng").setValue(lng)
 
             //Index room key to ROOM_NAMES
             firebaseDatabase.getReference("ROOM_NAMES/$ROOM_NAME/$ROOM_KEY").setValue(true)
