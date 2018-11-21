@@ -12,9 +12,9 @@
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="320dp"
+        android:layout_marginTop="352dp"
         android:ems="10"
-        android:hint="Enter Game Room ID"
+        android:hint="Enter Lobby Name"
         android:inputType="text"
         android:textAlignment="center"
         app:layout_constraintEnd_toEndOf="parent"
@@ -47,15 +47,85 @@
         app:layout_constraintTop_toBottomOf="@+id/roomNameText" />
 
     <Button
-        android:id="@+id/browseBtn"
+        android:id="@+id/findBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="16dp"
-        android:text="BROWSE"
+        android:text="FIND"
         app:layout_constraintEnd_toStartOf="@+id/joinBtn"
         app:layout_constraintStart_toEndOf="@+id/hostBtn"
         app:layout_constraintTop_toBottomOf="@+id/roomNameText" />
+
+    <ImageView
+        android:id="@+id/playerIcon"
+        android:layout_width="128dp"
+        android:layout_height="128dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/nameText"
+        app:srcCompat="@android:drawable/sym_def_app_icon" />
+
+    <EditText
+        android:id="@+id/nameText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="112dp"
+        android:ems="10"
+        android:hint="Enter Player Name"
+        android:inputType="textPersonName"
+        android:textAlignment="center"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <SeekBar
+        android:id="@+id/redSlider"
+        android:layout_width="192dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="16dp"
+        android:max="255"
+        android:progress="0"
+        android:progressTint="@android:color/holo_red_light"
+        android:thumbTint="@android:color/holo_red_dark"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/playerIcon"
+        app:layout_constraintTop_toTopOf="@+id/playerIcon" />
+
+    <SeekBar
+        android:id="@+id/greenSlider"
+        android:layout_width="192dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="16dp"
+        android:max="255"
+        android:progress="0"
+        android:progressTint="@android:color/holo_green_light"
+        android:thumbTint="@android:color/holo_green_dark"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="@+id/redSlider"
+        app:layout_constraintTop_toBottomOf="@+id/redSlider" />
+
+    <SeekBar
+        android:id="@+id/blueSlider"
+        android:layout_width="192dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="16dp"
+        android:max="255"
+        android:progress="0"
+        android:progressTint="@android:color/holo_blue_light"
+        android:thumbTint="@android:color/holo_blue_dark"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="@+id/greenSlider"
+        app:layout_constraintTop_toBottomOf="@+id/greenSlider" />
 
 </android.support.constraint.ConstraintLayout>
