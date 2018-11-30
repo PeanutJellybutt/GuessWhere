@@ -323,7 +323,6 @@ class GameActivity : AppCompatActivity(), OnMapReadyCallback {
         ansBtn.setOnClickListener {
             if ( (answerable) and (!ansInput.text.isNullOrEmpty()) ) {
                 submitAnswer(ansInput.text.toString())
-                ansInput.text.clear()
                 ansTimer!!.cancel()
             }
         }
@@ -377,6 +376,7 @@ class GameActivity : AppCompatActivity(), OnMapReadyCallback {
 
         answerable = true
         ansInput.isEnabled = true
+        ansInput.text.clear()
 
         //start countdown
         ansTimer = object : CountDownTimer(quizTimer!!, 1000) {
