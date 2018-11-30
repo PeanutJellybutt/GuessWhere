@@ -1,16 +1,31 @@
 package com.egci428.u5781070.guesswhere
 
+import android.app.Activity
+import android.content.Intent
+import android.graphics.Color
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.database.*
 import kotlinx.android.synthetic.main.activity_game.*
+import android.os.CountDownTimer
+import java.util.*
 
-class GameActivity : AppCompatActivity() {
+
+class GameActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private val firebaseDatabase = FirebaseDatabase.getInstance()
     private var ROOM_NAME: String? = null
     private var ROOM_KEY: String? = null
+
+    private var isHost = false
 
     private var gameRef: DatabaseReference? = null
     private var flagPlayRef: DatabaseReference? = null
@@ -19,28 +34,49 @@ class GameActivity : AppCompatActivity() {
     private var ansRef: DatabaseReference? = null
     private var readyRef: DatabaseReference? = null
 
+    private var quizRefListener: ValueEventListener? = null
+    private var resultsRefListener: ValueEventListener? = null
+
+    private val countriesList = Country.initializeCountries()
     private var quizAsk: String? = null
     private var quizAns: String? = null
-    private var quizType: String? = null //fixed, dist, bonus
+    private var quizAnsInit: String? = null
     private var quizLat: Double? = null
     private var quizLng: Double? = null
-    private var quizTimer: Int? = null
+    private var quizValue: Int = 1
+    private var quizTimer: Long? = null
+    private var quizAnswer: String? = null
 
     private var myKey: String? = null
     private var answerable = false
+    private var ansTimer: CountDownTimer? = null
     private val scoreMap = hashMapOf<String,Int>()
+
+    private val SCORE_ROUND_REQUEST = 1
+    private val SCORE_MATCH_REQUEST = 2
+    private var playersList: ArrayList<Player>? = null
     private var endGame = false
+
+    private lateinit var mMap: GoogleMap
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_game)
 
+        val mapFragment = mapView as SupportMapFragment
+        mapFragment.getMapAsync(this)
+    }
+
+    override fun onMapReady(googleMap: GoogleMap) {
+        mMap = googleMap
+        mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+
         val bundle = intent.extras
         ROOM_NAME = bundle.get("name").toString()
         ROOM_KEY = bundle.get("key").toString()
-        val isHost = bundle.get("host") as Boolean
+        isHost = bundle.get("host") as Boolean
         myKey = bundle.get("my_key").toString()
-        var playersList = bundle.get("players") as ArrayList<Player>
+        playersList = bundle.get("players") as ArrayList<Player>
         var playersCount = bundle.get("players_count").toString().toInt()
 
         //Set database references that will be used
@@ -76,11 +112,10 @@ class GameActivity : AppCompatActivity() {
 
                         //Upload the question to Firebase
                         gameRef!!.child("question/ask").setValue(quizAsk)
-                        gameRef!!.child("question/ans").setValue(quizAns)
-                        gameRef!!.child("question/type").setValue(quizType)
                         gameRef!!.child("question/lat").setValue(quizLat)
                         gameRef!!.child("question/lng").setValue(quizLng)
                         gameRef!!.child("question/timer").setValue(quizTimer)
+                        gameRef!!.child("question/answer").setValue(quizAnswer)
                         Log.d("HOST: QUESTION","UPLOADED")
 
                         //Set quiz flag to acknowledge players' device that the question is ready
@@ -105,7 +140,7 @@ class GameActivity : AppCompatActivity() {
                     //Retrieve, calculate and store each players' answers in a hashMap with player's key as the key
                     val playerKey = p0!!.key.toString()
                     val playerAns = p0!!.value.toString()
-                    val score = calculateScore(playerAns)
+                    val score = calculateScore(playerAns) * quizValue
                     scoreMap[playerKey] = score
                     Log.d("HOST: SCORES","$score SCORED BY $playerKey")
 
@@ -124,7 +159,7 @@ class GameActivity : AppCompatActivity() {
                         //Accumulate players' score results and upload it to Firebase
                         var max = 0
                         var winner: String? = null
-                        for ( player in playersList ) {
+                        for ( player in playersList!! ) {
                             val key = player.key
                             Log.d("HOST: DEBUG","KEY $key")
                             val earn = scoreMap[key]!!
@@ -147,6 +182,7 @@ class GameActivity : AppCompatActivity() {
                         questionLeft--
                         if ( questionLeft == 0 ) {
                             gameRef!!.child("PLAYERS/winner").setValue(winner)
+                            gameRef!!.child("PLAYERS/$winner/won").setValue(true)
                             Log.d("HOST: RESULTS","WINNER IS $winner")
                             endGame = true
                         }
@@ -208,7 +244,7 @@ class GameActivity : AppCompatActivity() {
         }
 
         //Wait for host to finish uploading new question to Firebase, then retrieve the question and its info
-        val quizRefListener = object: ValueEventListener {
+        quizRefListener = object: ValueEventListener {
             override fun onDataChange(p0: DataSnapshot?) {
                 val flag = p0!!.value.toString().toInt()
                 if (flag == 1 ) {
@@ -219,15 +255,14 @@ class GameActivity : AppCompatActivity() {
                     questionRef.addListenerForSingleValueEvent(object: ValueEventListener {
                         override fun onDataChange(p0: DataSnapshot?) {
                             quizAsk = p0!!.child("ask").value.toString()
-                            quizAns = p0!!.child("ans").value.toString()
-                            quizType = p0!!.child("type").value.toString()
                             quizLat = p0!!.child("lat").value.toString().toDouble()
                             quizLng = p0!!.child("lng").value.toString().toDouble()
-                            quizTimer = p0!!.child("timer").value.toString().toInt()
+                            quizTimer = p0!!.child("timer").value as Long
+                            quizAnswer = p0!!.child("answer").value.toString()
                             Log.d("PLAYER: QUESTION","DOWNLOADED")
 
-                            //*************** SUPPOSED TO BE PLAY THE GAME PART *************************
-                            answerable = true
+                            quizGetReady()
+
                             Log.d("PLAYER: GAME","THINKING/ANSWERING")
                         }
                         override fun onCancelled(p0: DatabaseError?) { }
@@ -238,19 +273,8 @@ class GameActivity : AppCompatActivity() {
         }
         flagQuizRef!!.addValueEventListener(quizRefListener)
 
-        //Upload answer to Firebase
-        ansBtn.setOnClickListener {
-            answerable = false
-
-            ansRef!!.child(myKey).setValue("THIS IS MY ANSWER!")
-            Log.d("PLAYER: ANSWERS","PUSHED $myKey")
-        }
-
         //Wait for host to finish calculating scores and upload it to Firebase, either for round end or match end
-        val resultsRefListener = object: ValueEventListener {
-
-            val thisListener = this
-
+        resultsRefListener = object: ValueEventListener {
             override fun onDataChange(p0: DataSnapshot?) {
                 val flag = p0!!.value.toString().toInt()
                 if ( flag != 0 ) {
@@ -261,39 +285,24 @@ class GameActivity : AppCompatActivity() {
                         override fun onDataChange(p0: DataSnapshot?) {
 
                             //Retrieve scores for each players
-                            for ( player in playersList ) {
+                            for ( player in playersList!! ) {
                                 val key = player.key
                                 player.earn = p0!!.child("$key/earn").value.toString().toInt()
                                 player.total = p0!!.child("$key/total").value.toString().toInt()
+                                player.won = p0!!.child("$key/won").value as Boolean
                                 Log.d("PLAYER: SCORES","DOWNLOADED $key")
                             }
 
                             val winner = p0!!.child("winner").value.toString()
                             if ( winner == "0" ) {
                                 //If match is not ending (winner not declared), display round scoreboard
-
-                                //*************** DISPLAY ROUND SCOREBOARD ******************
-
+                                displayScoreboard(SCORE_ROUND_REQUEST,6000)
                                 Log.d("PLAYER: SCOREBOARD","ROUND DISPLAY")
-
-                                //Set individual ready flag to inform host device that the player is ready to continue next round
-                                readyRef!!.push().setValue(true)
-                                Log.d("PLAYER: READY","PUSHED $myKey")
                             } else {
                                 //If match is ending (winner declared), display end of match scoreboard
                                 Log.d("PLAYER: SCOREBOARD","WINNER IS $winner")
-
-                                //*************** DISPLAY END OF MATCH SCOREBOARD ******************
-
+                                displayScoreboard(SCORE_MATCH_REQUEST,10000)
                                 Log.d("PLAYER: SCOREBOARD","MATCH DISPLAY")
-
-                                //Remove database references listener and set individual ready flag to inform host device that the player is exiting the match
-                                flagQuizRef!!.removeEventListener(quizRefListener)
-                                flagResultsRef!!.removeEventListener(thisListener)
-                                readyRef!!.push().setValue(true)
-                                Log.d("PLAYER: READY","PUSHED $myKey")
-                                if ( !isHost )
-                                    finish()
                             }
                         }
                         override fun onCancelled(p0: DatabaseError?) { }
@@ -303,26 +312,137 @@ class GameActivity : AppCompatActivity() {
             override fun onCancelled(p0: DatabaseError?) { }
         }
         flagResultsRef!!.addValueEventListener(resultsRefListener)
+
+        //Submit answer
+        ansBtn.setOnClickListener {
+            if ( (answerable) and (!ansInput.text.isNullOrEmpty()) ) {
+                submitAnswer(ansInput.text.toString())
+                ansInput.text.clear()
+                ansTimer!!.cancel()
+            }
+        }
     }
 
+    //Question setup/selection
     private fun setQuiz() {
 
-        //**************** QUESTION SELECTION HERE ******************
+        val rand = Random()
+        val pos = rand.nextInt(countriesList.size)
+        val country = countriesList[pos]
 
-        //TEST FOR NOW
-        quizAsk = "What is the name of this city?"
-        quizAns = "Bangkok"
-        quizType = "fixed"
-        quizLat = 5.0
-        quizLng = 5.0
-        quizTimer = 10000
+        quizAsk = "What is the name of this country?"
+        quizAns = country.name
+        quizAnsInit = country.initial
+        quizLat = country.lat
+        quizLng = country.lng
+        quizValue = rand.nextInt(1) + 1
+        quizTimer = 20000
+
+        quizAnswer = "$quizAnsInit : $quizAns"
+
+        countriesList.removeAt(pos)
     }
 
+    //Pre question
+    private fun quizGetReady() {
+        mMap.clear()
+        val pos = LatLng(0.0, 0.0)
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, -4f))
+        Toast.makeText(this@GameActivity, "GET READY..", Toast.LENGTH_LONG).show()
+
+        timerView.text = "Processing..."
+        timerView.setTextColor(Color.BLACK)
+
+        //start countdown
+        object : CountDownTimer(3500, 1000) {
+            override fun onTick(millisUntilFinished: Long) { }
+            override fun onFinish() {
+                quizStart()
+            }
+        }.start()
+    }
+
+    //Show question, marker and camera shift
+    private fun quizStart() {
+        quizView.text = quizAsk
+        val pos = LatLng(quizLat!!, quizLng!!)
+        mMap.addMarker(MarkerOptions().position(pos).title("Location Marker"))
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(pos, 4f))
+
+        answerable = true
+        ansInput.isEnabled = true
+
+        //start countdown
+        ansTimer = object : CountDownTimer(quizTimer!!, 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                if (millisUntilFinished > 0) {
+                    timerView.text = "Seconds Remaining: " + (millisUntilFinished / 1000).toString()
+
+                    if ( millisUntilFinished <= 7000 )
+                        timerView.setTextColor(Color.RED)
+                }
+            }
+            override fun onFinish() {
+                if ( answerable ) {
+                    if ( !ansInput.text.isNullOrEmpty() ) {
+                        submitAnswer(ansInput.text.toString())
+                        ansInput.text.clear()
+                    } else {
+                        submitAnswer("")
+                    }
+                }
+
+                timerView.text = "Seconds Remaining: 0"
+            }
+        }.start()
+    }
+
+    //Upload answer to Firebase
+    private fun submitAnswer(answer: String) {
+        answerable = false
+        ansInput.isEnabled = false
+
+        ansRef!!.child(myKey).setValue(answer)
+        Log.d("PLAYER: ANSWERS","PUSHED $myKey")
+    }
+
+    //Calculate score with the provided answer
     private fun calculateScore(ans: String): Int {
+        if ( ans == quizAns )
+            return 2
+        else if  ( ans == quizAnsInit)
+            return 1
+        else return 0
+    }
 
-        //**************** CALCULATE SCORE WITH THE PROVIDED ANSWER HERE ******************
+    private fun displayScoreboard(requestCode: Int, time: Long) {
+        val intent = Intent(this, ScoreboardActivity::class.java)
+        intent.putExtra("time",time)
+        intent.putExtra("players",playersList)
+        intent.putExtra("answer",quizAnswer)
+        startActivityForResult(intent, requestCode)
+    }
 
-        //TEST FOR NOW
-        return 10
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
+        super.onActivityResult(requestCode, resultCode, data)
+        // Check which request we're responding to
+        if (requestCode == SCORE_ROUND_REQUEST) {
+            // Make sure the request was successful
+            if (resultCode == Activity.RESULT_OK && data != null) {
+                //Set individual ready flag to inform host device that the player is ready to continue next round
+                readyRef!!.push().setValue(true)
+                Log.d("PLAYER: READY","PUSHED $myKey")
+            }
+        } else if (requestCode == SCORE_MATCH_REQUEST) {
+            if (resultCode == Activity.RESULT_OK && data != null) {
+                //Remove database references listener and set individual ready flag to inform host device that the player is exiting the match
+                flagQuizRef!!.removeEventListener(quizRefListener)
+                flagResultsRef!!.removeEventListener(resultsRefListener)
+                readyRef!!.push().setValue(true)
+                Log.d("PLAYER: READY","PUSHED $myKey")
+                if ( !isHost )
+                    finish()
+            }
+        }
     }
 }
