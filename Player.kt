@@ -16,6 +16,7 @@ class Player(key: String, name: String, color: Int): Serializable {
     var color: Int = color
     var earn: Int = 0
     var total: Int = 0
+    var won = false
 
     companion object {
         fun createPlayer(ref: DatabaseReference, name: String, color: Int): Player {
@@ -23,6 +24,7 @@ class Player(key: String, name: String, color: Int): Serializable {
             ref.child("color").setValue(color.toString())
             ref.child("earn").setValue(0)
             ref.child("total").setValue(0)
+            ref.child("won").setValue(false)
 
             return Player(ref.key,name,color)
         }
@@ -45,6 +47,7 @@ class LobbyPlayerAdapter (val mContext: Context, val layoutResId: Int, val playe
         val nameView = view!!.findViewById<TextView>(R.id.nameView)
         val iconView = view!!.findViewById<ImageView>(R.id.iconView)
         nameView.text = player.name
+        //nameView.setTextColor(player.color)
         iconView.setColorFilter(player.color)
 
         return view!!
