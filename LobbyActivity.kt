@@ -88,25 +88,27 @@ class LobbyActivity : AppCompatActivity() {
         if ( !isHost ) {
             gameRoomRef!!.child("started").addValueEventListener(object: ValueEventListener {
                 override fun onDataChange (p0: DataSnapshot) {
-                    val flag = p0.value.toString().toInt()
-                    if ( flag == 1 ) {
-                        Log.d("PLAYER: GAME ","STARTED")
+                    if ( p0.value != null ) {
+                        val flag = p0.value.toString().toInt()
+                        if ( flag == 1 ) {
+                            Log.d("PLAYER: GAME ","STARTED")
 
-                        //Start the main game activity as a client player
-                        val intent = Intent(applicationContext, GameActivity::class.java)
-                        intent.putExtra("name",ROOM_NAME)
-                        intent.putExtra("key",ROOM_KEY)
-                        intent.putExtra("host",false)
-                        intent.putExtra("my_key",currentPlayer.key)
-                        intent.putExtra("players",playersList)
-                        intent.putExtra("players_count",playersCount)
-                        startActivity(intent)
-                        finish()
-                    } else if ( flag == -1 ) {
-                        //Lobby is shutting down, remove own's player
-                        val myKey = currentPlayer.key
-                        playersRef!!.child(myKey).removeValue()
-                        finish()
+                            //Start the main game activity as a client player
+                            val intent = Intent(applicationContext, GameActivity::class.java)
+                            intent.putExtra("name",ROOM_NAME)
+                            intent.putExtra("key",ROOM_KEY)
+                            intent.putExtra("host",false)
+                            intent.putExtra("my_key",currentPlayer.key)
+                            intent.putExtra("players",playersList)
+                            intent.putExtra("players_count",playersCount)
+                            startActivity(intent)
+                            finish()
+                        } else if ( flag == -1 ) {
+                            //Lobby is shutting down, remove own's player
+                            val myKey = currentPlayer.key
+                            playersRef!!.child(myKey).removeValue()
+                            finish()
+                        }
                     }
                 }
                 override fun onCancelled(p0: DatabaseError?) { }
