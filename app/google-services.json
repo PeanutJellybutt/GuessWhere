@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "696893521203",
+    "firebase_url": "https://guesswhere-80183.firebaseio.com",
+    "project_id": "guesswhere-80183",
+    "storage_bucket": "guesswhere-80183.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:696893521203:android:129c6fd7df8deff9",
+        "android_client_info": {
+          "package_name": "com.egci428.u5781070.guesswhere"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "696893521203-uaqqrrpngcv5c7k696jjatkurcp2kq2j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.egci428.u5781070.guesswhere",
+            "certificate_hash": "cbc7631041158edce6b4584486339cfe15a4cad5"
+          }
+        },
+        {
+          "client_id": "696893521203-mcp07cln2op5j73fj6s9qua5k2blecdv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCBltaCu3zu-InanbhJqr66ySfEo6hOQVQ"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "696893521203-mcp07cln2op5j73fj6s9qua5k2blecdv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
