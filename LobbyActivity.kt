@@ -10,6 +10,7 @@ import com.google.firebase.database.*
 import kotlinx.android.synthetic.main.activity_lobby.*
 import java.util.*
 import android.widget.CompoundButton
+import android.widget.SeekBar
 
 class LobbyActivity : AppCompatActivity() {
 
@@ -25,6 +26,8 @@ class LobbyActivity : AppCompatActivity() {
     private var playersListAdapter: LobbyPlayerAdapter? = null
 
     private lateinit var currentPlayer: Player
+
+    private var questionsCount = 5
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,8 +73,10 @@ class LobbyActivity : AppCompatActivity() {
         }
 
         //Display lobby name and its key
+        val lobbyColor = bundle.get("color").toString().toInt()
         roomNameView.text = ROOM_NAME
         roomKeyView.text = ROOM_KEY
+        roomNameView.setTextColor(lobbyColor)
 
         //Joining a lobby either as the host or client
         playersRef = gameRoomRef!!.child("PLAYERS")
@@ -155,20 +160,6 @@ class LobbyActivity : AppCompatActivity() {
         playersRef!!.addValueEventListener(playersListener)
 
         if ( isHost ) {
-            //FOR TESTING ONLY
-            addBtn.visibility = View.VISIBLE
-            addBtn.setOnClickListener {
-                if ( playersCount < 8 ) {
-
-                    val rnd = Random()
-                    val playerName = "ADDED_" + rnd.nextInt(256).toString()
-                    val playerColor = Color.argb(255, rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256))
-                    Player.createPlayer(playersRef!!.push(), playerName, playerColor)
-
-                    playersCount++
-                }
-            }
-
             //START button only visible to the host, start the main game when pressed
             startBtn.visibility = View.VISIBLE
             startBtn.setOnClickListener {
@@ -180,7 +171,7 @@ class LobbyActivity : AppCompatActivity() {
                 intent.putExtra("name", ROOM_NAME)
                 intent.putExtra("key", ROOM_KEY)
                 intent.putExtra("host", true)
-                intent.putExtra("questions", 4)
+                intent.putExtra("questions", questionsCount)
                 intent.putExtra("my_key", currentPlayer.key)
                 intent.putExtra("players", playersList)
                 intent.putExtra("players_count", playersCount)
@@ -196,6 +187,16 @@ class LobbyActivity : AppCompatActivity() {
                 if ( isChecked )
                     gameRoomRef!!.child("closed").setValue(1)
                 else gameRoomRef!!.child("closed").setValue(0)
+            })
+
+            lengthSlider.visibility = View.VISIBLE
+            lengthSlider.setOnSeekBarChangeListener( object: SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) {
+                    questionsCount = lengthSlider.progress + 1
+                    lengthView.text = "Questions: $questionsCount"
+                }
+                override fun onStartTrackingTouch(p0: SeekBar?) { }
+                override fun onStopTrackingTouch(p0: SeekBar?) { }
             })
         }
     }
