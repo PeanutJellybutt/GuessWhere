@@ -128,6 +128,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) {
                 playerColor = Color.argb(255, redSlider.progress, greenSlider.progress, blueSlider.progress)
                 playerIcon.setColorFilter(playerColor!!)
+                titleView.setTextColor(playerColor!!)
             }
             override fun onStartTrackingTouch(p0: SeekBar?) { }
             override fun onStopTrackingTouch(p0: SeekBar?) { }
@@ -355,6 +356,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         blueSlider.progress = rnd.nextInt(256)
         playerColor = Color.argb(255, redSlider.progress, greenSlider.progress, blueSlider.progress)
         playerIcon.setColorFilter(playerColor!!)
+        titleView.setTextColor(playerColor!!)
     }
 
     override fun onSensorChanged(event: SensorEvent) {
