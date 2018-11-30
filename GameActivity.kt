@@ -166,6 +166,7 @@ class GameActivity : AppCompatActivity(), OnMapReadyCallback {
                             val total = player.total + earn
                             if ( total > max ) {
                                 winner = key
+                                max = total
                             }
                             Log.d("HOST: SCORES","ACCUMULATED FOR $key")
 
