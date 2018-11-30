@@ -246,27 +246,30 @@ class GameActivity : AppCompatActivity(), OnMapReadyCallback {
         //Wait for host to finish uploading new question to Firebase, then retrieve the question and its info
         quizRefListener = object: ValueEventListener {
             override fun onDataChange(p0: DataSnapshot?) {
-                val flag = p0!!.value.toString().toInt()
-                if (flag == 1 ) {
-                    Log.d("PLAYER: FLAG CHECK","QUIZ 1")
+                if ( p0!!.value != null ) {
+                    val flag = p0!!.value.toString().toInt()
+                    if (flag == 1) {
+                        Log.d("PLAYER: FLAG CHECK", "QUIZ 1")
 
-                    //Retrieve question from Firebase
-                    val questionRef = gameRef!!.child("question").ref
-                    questionRef.addListenerForSingleValueEvent(object: ValueEventListener {
-                        override fun onDataChange(p0: DataSnapshot?) {
-                            quizAsk = p0!!.child("ask").value.toString()
-                            quizLat = p0!!.child("lat").value.toString().toDouble()
-                            quizLng = p0!!.child("lng").value.toString().toDouble()
-                            quizTimer = p0!!.child("timer").value as Long
-                            quizAnswer = p0!!.child("answer").value.toString()
-                            Log.d("PLAYER: QUESTION","DOWNLOADED")
+                        //Retrieve question from Firebase
+                        val questionRef = gameRef!!.child("question").ref
+                        questionRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                            override fun onDataChange(p0: DataSnapshot?) {
+                                quizAsk = p0!!.child("ask").value.toString()
+                                quizLat = p0!!.child("lat").value.toString().toDouble()
+                                quizLng = p0!!.child("lng").value.toString().toDouble()
+                                quizTimer = p0!!.child("timer").value as Long
+                                quizAnswer = p0!!.child("answer").value.toString()
+                                Log.d("PLAYER: QUESTION", "DOWNLOADED")
 
-                            quizGetReady()
+                                quizGetReady()
 
-                            Log.d("PLAYER: GAME","THINKING/ANSWERING")
-                        }
-                        override fun onCancelled(p0: DatabaseError?) { }
-                    })
+                                Log.d("PLAYER: GAME", "THINKING/ANSWERING")
+                            }
+
+                            override fun onCancelled(p0: DatabaseError?) {}
+                        })
+                    }
                 }
             }
             override fun onCancelled(p0: DatabaseError?) { }
@@ -276,37 +279,40 @@ class GameActivity : AppCompatActivity(), OnMapReadyCallback {
         //Wait for host to finish calculating scores and upload it to Firebase, either for round end or match end
         resultsRefListener = object: ValueEventListener {
             override fun onDataChange(p0: DataSnapshot?) {
-                val flag = p0!!.value.toString().toInt()
-                if ( flag != 0 ) {
-                    Log.d("PLAYER: FLAG CHECK","RESULTS 1")
+                if ( p0!!.value != null ) {
+                    val flag = p0!!.value.toString().toInt()
+                    if (flag != 0) {
+                        Log.d("PLAYER: FLAG CHECK", "RESULTS 1")
 
-                    val playersRef = gameRef!!.child("PLAYERS").ref
-                    playersRef.addListenerForSingleValueEvent(object: ValueEventListener {
-                        override fun onDataChange(p0: DataSnapshot?) {
+                        val playersRef = gameRef!!.child("PLAYERS").ref
+                        playersRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                            override fun onDataChange(p0: DataSnapshot?) {
 
-                            //Retrieve scores for each players
-                            for ( player in playersList!! ) {
-                                val key = player.key
-                                player.earn = p0!!.child("$key/earn").value.toString().toInt()
-                                player.total = p0!!.child("$key/total").value.toString().toInt()
-                                player.won = p0!!.child("$key/won").value as Boolean
-                                Log.d("PLAYER: SCORES","DOWNLOADED $key")
+                                //Retrieve scores for each players
+                                for (player in playersList!!) {
+                                    val key = player.key
+                                    player.earn = p0!!.child("$key/earn").value.toString().toInt()
+                                    player.total = p0!!.child("$key/total").value.toString().toInt()
+                                    player.won = p0!!.child("$key/won").value as Boolean
+                                    Log.d("PLAYER: SCORES", "DOWNLOADED $key")
+                                }
+
+                                val winner = p0!!.child("winner").value.toString()
+                                if (winner == "0") {
+                                    //If match is not ending (winner not declared), display round scoreboard
+                                    displayScoreboard(SCORE_ROUND_REQUEST, 6000)
+                                    Log.d("PLAYER: SCOREBOARD", "ROUND DISPLAY")
+                                } else {
+                                    //If match is ending (winner declared), display end of match scoreboard
+                                    Log.d("PLAYER: SCOREBOARD", "WINNER IS $winner")
+                                    displayScoreboard(SCORE_MATCH_REQUEST, 10000)
+                                    Log.d("PLAYER: SCOREBOARD", "MATCH DISPLAY")
+                                }
                             }
 
-                            val winner = p0!!.child("winner").value.toString()
-                            if ( winner == "0" ) {
-                                //If match is not ending (winner not declared), display round scoreboard
-                                displayScoreboard(SCORE_ROUND_REQUEST,6000)
-                                Log.d("PLAYER: SCOREBOARD","ROUND DISPLAY")
-                            } else {
-                                //If match is ending (winner declared), display end of match scoreboard
-                                Log.d("PLAYER: SCOREBOARD","WINNER IS $winner")
-                                displayScoreboard(SCORE_MATCH_REQUEST,10000)
-                                Log.d("PLAYER: SCOREBOARD","MATCH DISPLAY")
-                            }
-                        }
-                        override fun onCancelled(p0: DatabaseError?) { }
-                    })
+                            override fun onCancelled(p0: DatabaseError?) {}
+                        })
+                    }
                 }
             }
             override fun onCancelled(p0: DatabaseError?) { }
